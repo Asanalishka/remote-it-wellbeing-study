@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "input": "data/sample/pilot_synthetic.csv",
+  "output": "results/pilot_summary.json",
+  "variables": {
+    "pss_items": ["pss_01", "pss_02", "pss_03", "pss_04", "pss_05", "pss_06", "pss_07", "pss_08", "pss_09", "pss_10"],
+    "pss_reverse": ["pss_04", "pss_05", "pss_07", "pss_08"],
+    "cbi_work_items": ["cbi_01", "cbi_02", "cbi_03", "cbi_04", "cbi_05", "cbi_06", "cbi_07"],
+    "cbi_reverse": "cbi_07"
+  },
+  "quality": {
+    "max_rejection_rate": 0.1,
+    "minimum_complete_cases_for_model": 80
+  },
+  "analysis": {
+    "outcome": "productivity_0_10",
+    "primary_predictor": "cbi_work_score_per_10",
+    "baseline": "controls + perceived stress",
+    "full_model": "baseline + work-related burnout",
+    "confidence_z": 1.96
+  }
+}
