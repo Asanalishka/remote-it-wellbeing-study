@@ -31,6 +31,7 @@ jobs:
           assert result["n_rejected"] == 0, result
           assert result["quality_pass"] is True, result
           assert result["primary_model"]["status"] == "not_estimated", result
-          assert set(result["descriptive"]) == {"pss_score", "cbi_work_score", "productivity_0_10"}, result
+          assert set(result["descriptive"]) == {"pss_score", "cbi_work_score", "productivity_0_10", "remote_work_percent"}, result
+          assert result["descriptive"]["remote_work_percent"] == 78.438, result
           print("Persisted pilot JSON verified: 8 valid synthetic responses; no inference.")
           PY

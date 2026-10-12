@@ -10,7 +10,7 @@ from pathlib import Path
 
 REQUIRED = ("respondent_id", "age", "gender", "years_experience", "job_role",
             "weekly_hours", "work_life_balance_0_10", "communication_per_week",
-            "schedule_flexibility_0_10", "productivity_0_10")
+            "schedule_flexibility_0_10", "productivity_0_10", "remote_work_percent")
 GENDERS = {"woman", "man", "nonbinary", "prefer_not_to_say"}
 ROLES = {"developer", "qa", "devops", "manager", "other"}
 
@@ -53,6 +53,9 @@ def validate_and_score(row, config):
               "communication_per_week": (0, 100),
               "schedule_flexibility_0_10": (0, 10), "productivity_0_10": (0, 10)}
     numeric = {name: number(row[name], name, *bounds) for name, bounds in ranges.items()}
+    numeric["remote_work_percent"] = number(row["remote_work_percent"], "remote_work_percent", 0, 100)
+    if numeric["remote_work_percent"] == 0:
+        raise ValueError("remote_work_percent: must be greater than 0 and at most 100")
     if numeric["years_experience"] > numeric["age"] - 16:
         raise ValueError("years_experience: exceeds plausible working years")
     return {**row, **numeric, "respondent_id": respondent_id,
@@ -115,10 +118,14 @@ def fit_models(rows, config):
     x1 = [baseline(r) + [r["cbi_work_score"] / 10] for r in rows]
     base = ols(x0, y, target_index=len(x0[0]) - 1, z=config["analysis"]["confidence_z"])
     full = ols(x1, y, target_index=len(x1[0]) - 1, z=config["analysis"]["confidence_z"])
+    full_stress = ols(x1, y, target_index=len(x0[0]) - 1, z=config["analysis"]["confidence_z"])
     return {"status": "estimated", "n": len(rows), "baseline_r_squared": base["r_squared"],
             "full_r_squared": full["r_squared"],
             "delta_r_squared": round(full["r_squared"] - base["r_squared"], 5),
             "baseline_stress_beta_per_point": base["beta"],
+            "full_stress_beta_per_point": full_stress["beta"],
+            "full_stress_beta_standard_error": full_stress["standard_error"],
+            "full_stress_beta_approx_95pct_ci": full_stress["approx_95pct_ci"],
             "burnout_beta_per_10_points": full["beta"],
             "burnout_beta_standard_error": full["standard_error"],
             "burnout_beta_approx_95pct_ci": full["approx_95pct_ci"],
@@ -164,7 +171,7 @@ def run(config_path, input_path, output_path):
     if clean:
         result["descriptive"] = {
             k: round(sum(r[k] for r in clean) / len(clean), 3)
-            for k in ("pss_score", "cbi_work_score", "productivity_0_10")}
+            for k in ("pss_score", "cbi_work_score", "productivity_0_10", "remote_work_percent")}
     n_min = config["quality"]["minimum_complete_cases_for_model"]
     if len(clean) >= n_min and result["quality_pass"]:
         try:

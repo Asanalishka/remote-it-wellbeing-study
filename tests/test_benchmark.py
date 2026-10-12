@@ -2,6 +2,7 @@ import contextlib
 import csv
 import io
 import json
+import math
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -33,13 +34,15 @@ class ScoringTests(unittest.TestCase):
             self.assertEqual(result["n_valid"], 8)
             self.assertTrue(result["quality_pass"])
             self.assertEqual(result["primary_model"]["status"], "not_estimated")
+            self.assertEqual(result["descriptive"]["remote_work_percent"], 78.438)
             self.assertEqual(json.loads(output.read_text())["n_valid"], 8)
 
     def test_model_recovers_known_negative_association(self):
         rows = []
         for i in range(120):
             burnout = (i * 7) % 85
-            stress = (i * 3) % 37
+            # Correlation exposes the omitted-burnout bias in the baseline slope.
+            stress = 0.3 * burnout + ((i * 3) % 37) / 4
             age = 22 + i % 25
             experience = 1 + i % 10
             hours = 32 + i % 17
@@ -48,8 +51,33 @@ class ScoringTests(unittest.TestCase):
                          "pss_score": stress, "cbi_work_score": burnout,
                          "productivity_0_10": 8 - 0.35 * (burnout / 10) - 0.02 * stress
                          + 0.002 * age + 0.001 * hours})
+        # Paired residuals retain the exact slopes with nonzero uncertainty.
+        rows = [{**row, "productivity_0_10": row["productivity_0_10"] + noise}
+                for row in rows for noise in (-0.1, 0.1)]
         result = fit_models(rows, CONFIG)
         self.assertAlmostEqual(result["burnout_beta_per_10_points"], -0.35, places=3)
+        self.assertAlmostEqual(result["full_stress_beta_per_point"], -0.02, places=3)
+        self.assertGreater(abs(result["baseline_stress_beta_per_point"]
+                               - result["full_stress_beta_per_point"]), 0.01)
+        for prefix, beta_key in (("full_stress", "full_stress_beta_per_point"),
+                                 ("burnout", "burnout_beta_per_10_points")):
+            se = result[f"{prefix}_beta_standard_error"]
+            low, high = result[f"{prefix}_beta_approx_95pct_ci"]
+            self.assertTrue(all(math.isfinite(v) for v in (se, low, high)))
+            self.assertGreater(se, 0)
+            self.assertLess(low, result[beta_key])
+            self.assertGreater(high, result[beta_key])
+            self.assertAlmostEqual(high - low, 2 * 1.96 * se, delta=0.00003)
+        existing_fields = {"status", "n", "baseline_r_squared", "full_r_squared",
+                           "delta_r_squared", "baseline_stress_beta_per_point",
+                           "burnout_beta_per_10_points", "burnout_beta_standard_error",
+                           "burnout_beta_approx_95pct_ci", "uncertainty_note"}
+        self.assertTrue(existing_fields <= result.keys())
+        self.assertEqual(json.loads(json.dumps(result, allow_nan=False)), result)
+        # Remote intensity describes the sample and must not change either model.
+        with_intensity = [{**row, "remote_work_percent": 25 + i % 76}
+                          for i, row in enumerate(rows)]
+        self.assertEqual(fit_models(with_intensity, CONFIG), result)
 
         # With no burnout contribution, the baseline must recover the stress slope.
         for row in rows:
@@ -83,6 +111,30 @@ class InputValidationTests(unittest.TestCase):
         self.write_rows(self.rows, [f for f in self.fields if f != "age"])
         with self.assertRaisesRegex(ValueError, "missing columns: age"):
             self.run_input()
+
+    def test_missing_remote_work_percent_fails_without_days_fallback(self):
+        fields = [f for f in self.fields if f != "remote_work_percent"]
+        self.write_rows([{**row, "remote_days_per_week": "4"} for row in self.rows],
+                        fields + ["remote_days_per_week"])
+        with self.assertRaisesRegex(ValueError, "missing columns: remote_work_percent"):
+            self.run_input()
+
+    def test_remote_work_percent_accepts_positive_fractions_and_upper_bound(self):
+        for value in ("0.1", "62.5", "100"):
+            with self.subTest(value=value):
+                self.write_rows([{**self.rows[0], "remote_work_percent": value}])
+                result = self.run_input()
+                self.assertEqual(result["n_valid"], 1)
+                self.assertEqual(result["descriptive"]["remote_work_percent"], float(value))
+
+    def test_remote_work_percent_rejects_invalid_values(self):
+        for value in ("0", "-1", "100.1", "", "nan", "inf", "unknown"):
+            with self.subTest(value=value):
+                self.write_rows([{**self.rows[0], "remote_work_percent": value}])
+                result = self.run_input()
+                self.assertEqual(result["n_valid"], 0)
+                self.assertEqual(result["n_rejected"], 1)
+                self.assertIn("remote_work_percent", result["rejections"][0]["reason"])
 
     def test_duplicate_header_column_fails(self):
         self.write_rows(self.rows, self.fields + ["age"])
