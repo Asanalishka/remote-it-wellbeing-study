@@ -13,10 +13,6 @@
     "minimum_complete_cases_for_model": 80
   },
   "analysis": {
-    "outcome": "productivity_0_10",
-    "primary_predictor": "cbi_work_score_per_10",
-    "baseline": "controls + perceived stress",
-    "full_model": "baseline + work-related burnout",
     "confidence_z": 1.96
   }
 }

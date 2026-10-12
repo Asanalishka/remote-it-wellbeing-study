@@ -42,7 +42,8 @@ def score_cbi_work(row, config):
 
 
 def validate_and_score(row, config):
-    if not row["respondent_id"].strip():
+    respondent_id = (row["respondent_id"] or "").strip()
+    if not respondent_id:
         raise ValueError("respondent_id: empty")
     for key, allowed in (("gender", GENDERS), ("job_role", ROLES)):
         if row[key] not in allowed:
@@ -54,7 +55,8 @@ def validate_and_score(row, config):
     numeric = {name: number(row[name], name, *bounds) for name, bounds in ranges.items()}
     if numeric["years_experience"] > numeric["age"] - 16:
         raise ValueError("years_experience: exceeds plausible working years")
-    return {**row, **numeric, "pss_score": score_pss(row, config),
+    return {**row, **numeric, "respondent_id": respondent_id,
+            "pss_score": score_pss(row, config),
             "cbi_work_score": score_cbi_work(row, config)}
 
 
@@ -111,11 +113,12 @@ def fit_models(rows, config):
                 *[float(r["job_role"] == role) for role in roles], r["pss_score"]]
     x0 = [baseline(r) for r in rows]
     x1 = [baseline(r) + [r["cbi_work_score"] / 10] for r in rows]
-    base = ols(x0, y)
+    base = ols(x0, y, target_index=len(x0[0]) - 1, z=config["analysis"]["confidence_z"])
     full = ols(x1, y, target_index=len(x1[0]) - 1, z=config["analysis"]["confidence_z"])
     return {"status": "estimated", "n": len(rows), "baseline_r_squared": base["r_squared"],
             "full_r_squared": full["r_squared"],
             "delta_r_squared": round(full["r_squared"] - base["r_squared"], 5),
+            "baseline_stress_beta_per_point": base["beta"],
             "burnout_beta_per_10_points": full["beta"],
             "burnout_beta_standard_error": full["standard_error"],
             "burnout_beta_approx_95pct_ci": full["approx_95pct_ci"],
@@ -126,20 +129,25 @@ def run(config_path, input_path, output_path):
     config = json.loads(config_path.read_text(encoding="utf-8"))
     with input_path.open(newline="", encoding="utf-8-sig") as fh:
         reader = csv.DictReader(fh)
+        if len(reader.fieldnames or []) != len(set(reader.fieldnames or [])):
+            raise ValueError("duplicate CSV column names")
         columns = set(reader.fieldnames or [])
         expected = set(REQUIRED + tuple(config["variables"]["pss_items"])
                        + tuple(config["variables"]["cbi_work_items"]))
         missing = expected - columns
         if missing:
             raise ValueError(f"missing columns: {', '.join(sorted(missing))}")
-        raw = list(reader)
+        raw = [(reader.line_num, row) for row in reader]
     if not raw:
         raise ValueError("CSV has no responses")
     seen, clean, rejected = set(), [], []
-    for line, row in enumerate(raw, start=2):
+    for line, row in raw:
         try:
             if None in row:
                 raise ValueError("unexpected extra columns")
+            incomplete = sorted(key for key in expected if row[key] is None)
+            if incomplete:
+                raise ValueError(f"incomplete row; missing fields: {', '.join(incomplete)}")
             scored = validate_and_score(row, config)
             key = scored["respondent_id"]
             if key in seen:
