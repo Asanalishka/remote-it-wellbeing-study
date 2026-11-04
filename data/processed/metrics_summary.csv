@@ -1,0 +1,4 @@
+metric,unit,n,mean,sd,p25,p50,p75,p95,p99,mean_ci95_low,mean_ci95_high,iqr_lower_fence,iqr_upper_fence,n_iqr_flagged,ci_status,synthetic_demo,notice,tail_percentile_note
+pss_score,points,8,21.375,9.038607668,16.5,20,28,32.95,33.79,15.5,27.125,-0.75,45.25,0,educational_only,True,"Synthetic data — pipeline check, not research findings",Unstable with eight observations; descriptive only
+cbi_work_score,points,8,51.33928571,24.88585458,36.60714286,50,65.17857143,85.53571429,88.53571429,35.71428571,67.41071429,-6.25,108.0357143,0,educational_only,True,"Synthetic data — pipeline check, not research findings",Unstable with eight observations; descriptive only
+productivity_0_10,points,8,6.5,1.603567451,5.75,6.5,7.25,8.65,8.93,5.5,7.5,3.5,9.5,0,educational_only,True,"Synthetic data — pipeline check, not research findings",Unstable with eight observations; descriptive only

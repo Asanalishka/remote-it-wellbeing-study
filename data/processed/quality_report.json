@@ -1,0 +1,50 @@
+{
+  "synthetic_demo": true,
+  "notice": "Synthetic data — pipeline check, not research findings",
+  "source": "data/sample/pilot_synthetic.csv",
+  "source_sha256": "7bad4d0997e51bd1c44ae0c2fe225186691af96caadf4206a73273bf0ee2cebe",
+  "config_sha256": "e515d805d0e753d0e97ac02fc97024b7cca800a6fe7af640a2f65d7769b6bfc3",
+  "versions": {
+    "python": "3.14.8",
+    "numpy": "2.3.5",
+    "pandas": "2.3.3",
+    "matplotlib": "3.10.8",
+    "seaborn": "0.13.2"
+  },
+  "bootstrap": {
+    "unit": "respondent",
+    "statistic": "mean",
+    "method": "percentile",
+    "resamples": 10000,
+    "seed": 42,
+    "rng": "PCG64",
+    "confidence_level": 0.95,
+    "interpretation": "educational only"
+  },
+  "quantile_interpolation": "linear",
+  "sd_ddof": 1,
+  "outlier_policy": "flag outside Q1 - 1.5*IQR and Q3 + 1.5*IQR; never remove",
+  "quality_threshold": 0.1,
+  "model_minimum_complete_cases": 80,
+  "primary_model": {
+    "status": "not_estimated",
+    "reason": "descriptive synthetic studio only"
+  },
+  "processing_status": "complete",
+  "n_input": 8,
+  "n_valid": 8,
+  "n_rejected": 0,
+  "rejection_rate": 0.0,
+  "rejections": [],
+  "quality_pass": true,
+  "rejection_reasons": {},
+  "iqr_flag_counts": {
+    "pss_score": 0,
+    "cbi_work_score": 0,
+    "productivity_0_10": 0
+  },
+  "artifacts_sha256": {
+    "cleaned_responses.csv": "2984576943c459ca80274c9f8b673506214e58c74ccdcc375546b8eadde93d06",
+    "metrics_summary.csv": "124e65b47476605c1626e6457940816b7ed343fb11ca3cd0fcf7e2c1800eb642"
+  }
+}

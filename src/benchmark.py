@@ -132,8 +132,8 @@ def fit_models(rows, config):
             "uncertainty_note": full["standard_error_method"]}
 
 
-def run(config_path, input_path, output_path):
-    config = json.loads(config_path.read_text(encoding="utf-8"))
+def load_responses(input_path, config):
+    """Return scored valid rows and a quality report without writing artifacts."""
     with input_path.open(newline="", encoding="utf-8-sig") as fh:
         reader = csv.DictReader(fh)
         if len(reader.fieldnames or []) != len(set(reader.fieldnames or [])):
@@ -168,6 +168,12 @@ def run(config_path, input_path, output_path):
               "n_input": len(raw), "n_valid": len(clean), "n_rejected": len(rejected),
               "rejection_rate": round(rate, 4), "rejections": rejected,
               "quality_pass": rate <= config["quality"]["max_rejection_rate"]}
+    return clean, result
+
+
+def run(config_path, input_path, output_path):
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    clean, result = load_responses(input_path, config)
     if clean:
         result["descriptive"] = {
             k: round(sum(r[k] for r in clean) / len(clean), 3)
@@ -183,7 +189,7 @@ def run(config_path, input_path, output_path):
                                    "reason": f"requires >= {n_min} valid responses and passing quality checks"}
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(json.dumps(result, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    print(f"Wrote {output_path}; valid={len(clean)}/{len(raw)}; model={result['primary_model']['status']}")
+    print(f"Wrote {output_path}; valid={len(clean)}/{result['n_input']}; model={result['primary_model']['status']}")
     return result
 
 

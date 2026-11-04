@@ -29,7 +29,7 @@ For RQ2, compare adjusted predictions for combinations actually observed in the 
 
 | Role | Variables | Measurement / handling |
 | --- | --- | --- |
-| RQ2 independent (observed) | Weekly hours; work-life balance; communication interactions per week; schedule flexibility | Hours (1–100); balance and flexibility ratings (0–10); communication count (0–100). Treat scales carefully, inspect nonlinearity. |
+| RQ2 independent (observed) | Weekly hours; work-life balance; categorical communication frequency; schedule flexibility | In the completed survey, balance and flexibility are 1–5 ratings and communication has five ordered categories. Treat communication as categorical; do not infer a weekly count. See [completed-survey codebook](completed-survey-codebook.md). |
 | RQ2 dependent | Perceived stress; work-related burnout | PSS-10 sum (0–40); CBI work subscale mean (0–100). |
 | RQ3 independent | Work-related burnout (primary); stress (required secondary) | CBI per 10 points; PSS-10 per point; both coefficients from the same full model. |
 | RQ3 dependent | Self-reported productivity | A prespecified rating from 0 to 10, not objective software output. |
@@ -55,11 +55,15 @@ The Week 6 repository includes eight explicitly synthetic rows, including invent
 
 **Sources for scoring:** [CMU PSS scoring](https://www.cmu.edu/dietrich/psychology/stress-immunity-disease-lab/scales/html/pssscoring.html); [original CBI work-related scale](https://nfa.dk/media/a4wheblj/cbi-scales.pdf).
 
-## 7. Required decisions before recruitment (Week 7)
+## 7. Original protocol decisions and limitations of the completed survey
 
-- Justify the sample size using a prespecified meaningful effect and sensitivity/power analysis; do not treat the 80-case engineering gate as that justification.
-- Freeze questionnaire wording (including usual-week remote-work percentage), language, scale anchors, reference windows, eligibility criteria and recruitment/consent procedures.
-- Prespecify missing-data handling, RQ2 joint tests and multiple-comparison control, how covariates are held constant or averaged for predictions, and model diagnostics.
-- Finalize the individual RQ1 test and RQ3 standard-error/p-value methods before analysis; apply the separate Holm families specified above. The pilot's approximate intervals are not substitutes for these procedures.
+The survey has been completed and will not be repeated. The actual response formats and modified CBI scoring are recorded in the [completed-survey codebook](completed-survey-codebook.md). Consent was obtained before the substantive questions, according to the study owner. Retain the original export and distinguish analysis of this completed survey from the synthetic pilot.
 
-These decisions require the author's study context. The synthetic pilot validates execution and scoring, not readiness to draw conclusions from real participants.
+The five real respondents were recruited through former colleagues and friends on 3–4 November 2026, according to the study owner. Collection is closed and no more responses are expected. The final export has five real questionnaires. Both review-flagged real answers remain in the descriptive sample without alteration. A separate reproducible set of 75 fictional answers is used only to exercise the completed-form pipeline; it cannot be counted toward the 80-real-case modeling gate or support inference about IT specialists.
+
+- Treat the 80-case engineering gate as a software safeguard, not a power calculation or a reason to infer results from five answers.
+- Preserve the wording and response options actually administered, including the four-category CBI and categorical communication item. Do not substitute the planned numerical formats during analysis.
+- Document missing-data handling, any RQ2 model, covariate handling and diagnostics before fitting models to a larger export.
+- Specify the individual RQ1 and RQ3 test methods before inferential analysis. The pilot's approximate intervals are not substitutes for these procedures.
+
+The synthetic pilot validates execution and scoring for its own schema. The completed survey's adapted CBI score and small available export do not support population conclusions.
